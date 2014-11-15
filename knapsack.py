@@ -9,6 +9,7 @@ import random
 
 # not sure that this needs its own def file right now
 class Box():
+
     def __init__(self, id, weight, value, inside=False):
         self.id = id
         self.weight = weight
@@ -38,7 +39,7 @@ boxes_outside = box_collection[:]
 ## GA Parameters
 ####################################
 
-population = 50
+pop_size = 50
 rounds = 100
 crossover_rate = 0.9
 mutation_rate = 0.1
@@ -46,10 +47,10 @@ mutation_rate = 0.1
 ## this is just an example of how to generate a population
 ## put boxes in the knapsack in a random configuration
 population = list()
-curr_round = 0
+curr_size = 0
 
 
-while curr_round <= rounds:
+while curr_size <= pop_size:
 
     curr_weight = 0
     curr_value = 0
@@ -74,16 +75,30 @@ while curr_round <= rounds:
     #create chromsome for population
     chromosome = list()
     for box in box_collection:
-        if box.inside == True:
+        if box.inside is True:
             chromosome.append(1)
         else:
             chromosome.append(0)
 
     population.append(chromosome)
-    curr_round += 1
+    curr_size += 1
 
     #reset knapsack
     boxes_outside = box_collection[:]
+    for box in boxes_outside:
+        box.inside = False
 
-# this is getting stuck on all of them in the box
 print population
+
+##################################
+## Crossover function goes here
+###################################
+
+
+###################################
+## Mutation function goes here
+###################################
+
+##################################
+## WoC function goes here
+##################################
