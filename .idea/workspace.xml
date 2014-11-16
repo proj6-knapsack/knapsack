@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d994d24b-1d0a-4ac3-a55b-a6d627dc0dac" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/defs.py" afterPath="$PROJECT_DIR$/defs.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/knapsack.py" afterPath="$PROJECT_DIR$/knapsack.py" />
     </list>
     <ignored path="knapsack.iws" />
@@ -26,10 +25,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="knapsack.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="knapsack.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/knapsack.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="87" column="31" selection-start="2403" selection-end="2403" vertical-scroll-proportion="0.0" vertical-offset="1443" max-vertical-offset="1989">
+            <state line="128" column="4" selection-start="3583" selection-end="3583" vertical-scroll-proportion="1.2902439" vertical-offset="1647" max-vertical-offset="2346">
               <folding>
                 <element signature="e#363#376#0" expanded="true" />
               </folding>
@@ -37,10 +36,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="defs.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="defs.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/defs.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="18" column="21" selection-start="544" selection-end="544" vertical-scroll-proportion="0.74634147" vertical-offset="0" max-vertical-offset="410">
+            <state line="15" column="0" selection-start="380" selection-end="380" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="408">
               <folding />
             </state>
           </provider>
@@ -68,8 +67,8 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/knapsack.py" />
         <option value="$PROJECT_DIR$/defs.py" />
+        <option value="$PROJECT_DIR$/knapsack.py" />
       </list>
     </option>
   </component>
@@ -302,7 +301,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1382" height="744" extended-state="1" />
+    <frame x="-8" y="-8" width="1382" height="744" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -342,7 +341,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/knapsack.py</url>
-          <line>41</line>
+          <line>50</line>
         </line-breakpoint>
       </breakpoints>
       <option name="time" value="2" />
@@ -381,19 +380,19 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/knapsack.py">
+    <entry file="file://$PROJECT_DIR$/defs.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="87" column="31" selection-start="2403" selection-end="2403" vertical-scroll-proportion="0.0" vertical-offset="1443" max-vertical-offset="1989">
-          <folding>
-            <element signature="e#363#376#0" expanded="true" />
-          </folding>
+        <state line="15" column="0" selection-start="380" selection-end="380" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="408">
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/defs.py">
+    <entry file="file://$PROJECT_DIR$/knapsack.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="18" column="21" selection-start="544" selection-end="544" vertical-scroll-proportion="0.74634147" vertical-offset="0" max-vertical-offset="410">
-          <folding />
+        <state line="128" column="4" selection-start="3583" selection-end="3583" vertical-scroll-proportion="1.2902439" vertical-offset="1647" max-vertical-offset="2346">
+          <folding>
+            <element signature="e#363#376#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
