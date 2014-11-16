@@ -28,7 +28,15 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
     # keep track of the best collection found so far
     optimal_collection = None
 
+    # list of boxes contained inside a configuration?
     contents = list()
+
+
+    # list of lists that tracks stats over evolution
+    performance_stats = list()  #  [[best_val, best_weight, avg_value, avg_weight],...]
+
+    # remember the best solutions from each generation.
+    best_of_each_generation = list()
 
 
     ##################
@@ -44,23 +52,25 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
     population = list()
     round_num = 0
 
+
+    # evolve a solution through a number of generations
     while round_num < generations:
 
         if DEBUG_EVOLUTION:
-            print "Evolution Round", round_num
+            print "Evolution Generation #", round_num
         round_num += 1
 
-        curr_size = 0  # reset current size each evolution round
+        # build random initial population
+        curr_size = 0  # have to reset current size each evolution round
         while curr_size <= population_size:
             curr_weight = 0
             curr_value = 0
             total_weight = 0
             total_value = 0
 
-            #create population of box configurations with weight <= capacity
+            # create population of random box configurations with weight <= capacity
             while curr_weight <= capacity and len(boxes_outside) > 0:
 
-                full_box_stats = list()
                 #add a random box to the knapsack
                 random_idx = random.randint(0, len(boxes_outside)-1)
                 chosen_box = boxes_outside[random_idx]
@@ -72,11 +82,13 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
                 chosen_box.inside = True
 
                 #check if there's any possible boxes to add to the contents without going over capacity
+                # TODO: double check this actually adds the box to the contents
                 for x in boxes_outside[:]:
                     if x.weight + curr_weight > capacity:
                         boxes_outside.remove(x)
 
-            #create chromsome for population
+            # create chromosome for population
+            # calculate this collection's value and weight
             chromosome = list()
             for box in box_collection:
                 if box.inside is True:
@@ -86,9 +98,9 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
                 else:
                     chromosome.append(0)
 
+            # create BoxCollection from chromosome, add to population
             full_box_stats = defs.BoxCollection(chromosome, total_weight, total_value, box_collection)
             population.append(full_box_stats)
-
             curr_size += 1
 
             #reset knapsack
@@ -99,6 +111,7 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
             # print debug info about this population member
             if DEBUG_EVOLUTION:
                 print "\tPop Member {0}:\t{1}".format(curr_size, full_box_stats)
+
 
         ######################################
         # crossover function
@@ -196,33 +209,44 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
 
             # have to recompute value and cost for mutated element
             x.update_values()
+            num_mutated += 1
 
             if DEBUG_EVOLUTION:
                 print "\tNEW VALUE:\t{1}".format(curr_size, x)
 
 
-            # find and record best population member from this generation
-            for x in population:
-                if optimal_collection == None:
-                    optimal_collection = x
-                elif (x.total_value > optimal_collection.total_value) and (x.total_weight < weight_max):
-                    optimal_collection = x
+        # END OF THIS GENERATION
+        # find and record best population member from this generation
+        for x in population:
+            if optimal_collection == None:
+                optimal_collection = x
+            elif (x.total_value > optimal_collection.total_value) and (x.total_weight < weight_max):
+                optimal_collection = x
+        best_of_each_generation.append(optimal_collection)
+        if DEBUG_EVOLUTION:
+            print "\tBEST:\t\t{0}".format(optimal_collection)
 
-            num_mutated += 1
 
-    if DEBUG_EVOLUTION:
-        print "\tBEST COLL.:\t{0}".format(optimal_collection)
+    # END OF ALL GENERATIONS
+    
+    # for idx, s in enumerate(best_of_each_generation):
+    #     print "Best Sol. Gen. {0}:\t{1}".format(idx, s)
 
     return optimal_collection
 
 
 
+
+
 def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations):
 
+    solutions = []
     best_solution = None
 
     for c in range(crowd_size):
+        print "\nCROWD #", c
         solution = genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, generations)
+        solutions.append(solution)
 
         if DEBUG_WOC:
             print "CROWD SOLUTION", c, ":", solution
@@ -231,6 +255,64 @@ def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, populat
             best_solution = solution
         elif (solution.total_value > best_solution.total_value) and (solution.total_weight < weight_max):
             best_solution = solution
+
+
+    # try to create even better solution by merging crowd's solutions
+    # count which boxes are shared by the crowd
+    shared_box_counts = [0 for x in range(num_boxes)]
+    for idx, solution in enumerate(solutions):
+        for idx in range(num_boxes):
+            if solution.box_stats[idx] == 1:
+                shared_box_counts[idx] += 1
+    # print "SHARED BOXES:\n", shared_box_counts
+
+    # create a new solution from boxes which are shared by the majority of the solutions
+    threshold = 0.5 # percentage of crowd that must share this box for it to be considered for the new solution
+    threshold_count = int(crowd_size * threshold)
+    new_solution = [0 for x in range(num_boxes)]
+    for idx, box in enumerate(shared_box_counts):
+        if box >= threshold_count:
+            new_solution[idx] = 1
+
+    new_full_solution = defs.BoxCollection(new_solution, 0, 0, boxes)
+    new_full_solution.update_values()
+    # print "NEW FULL:", new_full_solution
+
+    # if the box is over weight, remove objects until within weight
+    while new_full_solution.total_weight > weight_max:
+        # find box in solution with lowest value
+        object_to_remove = None
+        for idx in range(num_boxes):
+            # if this box is included in the solution
+            if new_full_solution.box_stats[idx] == 1:
+                # and it's less valuable that the box we're planning to remove
+                if object_to_remove == None or (boxes[idx].value < boxes[object_to_remove]):
+                    # select this box instead
+                    object_to_remove = idx
+
+        # remove the selected box
+        new_full_solution.box_stats[object_to_remove] = 0
+        # recalculate total weight and value of the solution
+        new_full_solution.update_values()
+
+    # print "CORRECTED FULL:", new_full_solution
+
+    # try to find any other boxes we can add while remaining within the weight limit
+    # TODO: sort them by value so we will use the higher-value items first
+    found = False
+    idx = 0
+    while not found and idx < num_boxes:
+        if new_full_solution.box_stats[idx] == 0:
+            new_weight = new_full_solution.total_weight + boxes[idx].weight
+            if new_weight <= weight_max:
+                new_full_solution.box_stats[idx] = 1
+                new_full_solution.update_values()
+                found = True
+        idx += 1
+
+    if new_full_solution.total_value > best_solution.total_value:
+        # print "made better solution"
+        best_solution = new_full_solution
 
     return best_solution
 
@@ -254,8 +336,8 @@ if __name__ == "__main__":
     #
     # genetic algorithm and WoC parameters
     #
-    crowd_size = 3
-    population_size = 5
+    crowd_size = 5
+    population_size = 10
     generations = 10
 
 
@@ -272,4 +354,4 @@ if __name__ == "__main__":
 
     best_solution = wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations)
 
-    print "FINAL RESULT:", best_solution
+    print "\nFINAL RESULT:", best_solution
