@@ -2,10 +2,11 @@
 ## Knapsack Problem:
 ## Given a number of objects n with weights w and value v,
 ## how can they be placed in a knapsack with capacity c
-## as to minimize the total weight and maximize the total value within?
+## as to maximize the total value within?
 ############################################################################
 
 import random
+import math
 import defs
 
 
@@ -40,9 +41,8 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
     ##################
     pop_size = 50
     rounds = 100
-    crossover_rate = 0.9
     mutation_rate = 0.1
-
+    num_to_mutate = math.ceil(pop_size * mutation_rate)
 
     population = list()
     round_num = 0
@@ -99,60 +99,66 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
                 box.inside = False
 
             # print debug info about this population member
-            # print "\tPop Member {0}:\t{1}\tValue: {2}\tCost: {3}".format(curr_size, full_box_stats.box_stats, full_box_stats.total_value, full_box_stats.total_weight)
+            print "\tPop Member {0}:\t{1}\tValue: {2}\tCost: {3}".format(curr_size, full_box_stats.box_stats, full_box_stats.total_value, full_box_stats.total_weight)
 
-        ##################################
-        ## Crossover function goes here
-        ###################################
+
+        ## the elitism method was chosen over the crossover method:
+        ## the best box configs are maintained in the population
+
 
         ######################
         # mutation function
         ######################
 
-        # perform mutation on weakest box config
-        min_value = 99999999999999
-        worst_box_config = None
-        for x in population:
-            if x.total_value < min_value:
-                min_value = x.total_value
-                worst_box_config = x
+        num_mutated = 0
 
-        # print "\tMUTATING:\t{0}\tValue: {1}\tCost: {2}".format(worst_box_config.box_stats, worst_box_config.total_value, worst_box_config.total_weight)
+        while num_mutated < num_to_mutate:
+            # perform mutation on weakest box configs
+            min_value = 99999999999999
+            worst_box_config = None
+            for x in population:
+                if x.total_value < min_value:
+                    min_value = x.total_value
+                    worst_box_config = x
 
-        # mutate x elements at random indices
-        num_to_switch = random.randint(0, 9)
-        idx_to_switch = list()
+            print "\tMUTATING:\t{0}\tValue: {1}\tCost: {2}".format(worst_box_config.box_stats, worst_box_config.total_value, worst_box_config.total_weight)
 
-        config_to_mutate = population.index(worst_box_config)
+            # mutate x elements at random indices
+            num_to_switch = random.randint(0, 9)
+            idx_to_switch = list()
 
-        while len(idx_to_switch) < num_to_switch:
-            idx = random.randint(0, 9)
-            if idx not in idx_to_switch:
-                idx_to_switch.append(idx)
+            config_to_mutate = population.index(worst_box_config)
 
-        x = population[config_to_mutate]
-        for y in idx_to_switch:
-            if x.box_stats[y] == 0:
-                x.box_stats[y] = 1
-            else:
-                x.box_stats[y] = 0
+            while len(idx_to_switch) < num_to_switch:
+                idx = random.randint(0, 9)
+                if idx not in idx_to_switch:
+                    idx_to_switch.append(idx)
 
-        # have to recompute value and cost for mutated element
-        x.update_values()
+            x = population[config_to_mutate]
+            for y in idx_to_switch:
+                if x.box_stats[y] == 0:
+                    x.box_stats[y] = 1
+                else:
+                    x.box_stats[y] = 0
 
-        # print "\tNEW VALUE:\t{0}\tValue: {1}\tCost: {2}".format(x.box_stats, x.total_value, x.total_weight)
+            # have to recompute value and cost for mutated element
+            x.update_values()
+
+            print "\tNEW VALUE:\t{0}\tValue: {1}\tCost: {2}".format(x.box_stats, x.total_value, x.total_weight)
 
 
-        # find and record best population member from this generation
-        for x in population:
-            if optimal_collection == None:
-                optimal_collection = x
-            elif (x.total_value > optimal_collection.total_value) and (x.total_weight < weight_max):
-                optimal_collection = x
+            # find and record best population member from this generation
+            for x in population:
+                if optimal_collection == None:
+                    optimal_collection = x
+                elif (x.total_value > optimal_collection.total_value) and (x.total_weight < weight_max):
+                    optimal_collection = x
 
-        # print "\tBEST COLL.:\t{0}\tValue: {1}\tCost: {2}".format(optimal_collection.box_stats, optimal_collection.total_value, optimal_collection.total_weight)
+            print "\tBEST COLL.:\t{0}\tValue: {1}\tCost: {2}".format(optimal_collection.box_stats, optimal_collection.total_value, optimal_collection.total_weight)
 
-    # print "\tBEST COLL.:\t{0}\tValue: {1}\tCost: {2}".format(optimal_collection.box_stats, optimal_collection.total_value, optimal_collection.total_weight)
+            num_mutated += 1
+
+    print "\tBEST COLL.:\t{0}\tValue: {1}\tCost: {2}".format(optimal_collection.box_stats, optimal_collection.total_value, optimal_collection.total_weight)
 
     return optimal_collection
 

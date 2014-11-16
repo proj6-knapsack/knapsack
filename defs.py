@@ -26,6 +26,14 @@ class BoxCollection():
     def __str__(self):
         return "{0}\tValue: {1}\tCost: {2}".format(self.box_stats, self.total_value, self.total_weight)
 
+def find_max_value(population):
+    best_box_config = None
+    max_value = 0
+    for x in population:
+        if x.total_value > max_value:
+            max_value = x.total_value
+            best_box_config = x
+    return best_box_config
 
 #currently crossover algorithm just swaps the first half of the fittest configuration w/that of the second fittest
 def crossover(population):
