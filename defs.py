@@ -23,6 +23,9 @@ class BoxCollection():
                 self.total_value += self.boxes[index].value
                 self.total_weight += self.boxes[index].weight
 
+    def __str__(self):
+        return "{0}\tValue: {1}\tCost: {2}".format(self.box_stats, self.total_value, self.total_weight)
+
 
 #currently crossover algorithm just swaps the first half of the fittest configuration w/that of the second fittest
 def crossover(population):

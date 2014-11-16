@@ -49,7 +49,7 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
 
     while round_num < rounds:
 
-        print "Evolution Round", round_num
+        # print "Evolution Round", round_num
         round_num += 1
 
         curr_size = 0  # reset current size each evolution round
@@ -99,8 +99,7 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
                 box.inside = False
 
             # print debug info about this population member
-            print "\tPop Member {0}:\t{1}\tValue: {2}\tCost: {3}".format(
-                curr_size, full_box_stats.box_stats, full_box_stats.total_value, full_box_stats.total_weight)
+            # print "\tPop Member {0}:\t{1}\tValue: {2}\tCost: {3}".format(curr_size, full_box_stats.box_stats, full_box_stats.total_value, full_box_stats.total_weight)
 
         ##################################
         ## Crossover function goes here
@@ -118,7 +117,7 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
                 min_value = x.total_value
                 worst_box_config = x
 
-        print "\tMUTATING:\t{0}\tValue: {1}\tCost: {2}".format(worst_box_config.box_stats, worst_box_config.total_value, worst_box_config.total_weight)
+        # print "\tMUTATING:\t{0}\tValue: {1}\tCost: {2}".format(worst_box_config.box_stats, worst_box_config.total_value, worst_box_config.total_weight)
 
         # mutate x elements at random indices
         num_to_switch = random.randint(0, 9)
@@ -141,7 +140,7 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
         # have to recompute value and cost for mutated element
         x.update_values()
 
-        print "\tNEW VALUE:\t{0}\tValue: {1}\tCost: {2}".format(x.box_stats, x.total_value, x.total_weight)
+        # print "\tNEW VALUE:\t{0}\tValue: {1}\tCost: {2}".format(x.box_stats, x.total_value, x.total_weight)
 
 
         # find and record best population member from this generation
@@ -151,30 +150,41 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
             elif (x.total_value > optimal_collection.total_value) and (x.total_weight < weight_max):
                 optimal_collection = x
 
-        print "\tBEST COLL.:\t{0}\tValue: {1}\tCost: {2}".format(optimal_collection.box_stats, optimal_collection.total_value, optimal_collection.total_weight)
+        # print "\tBEST COLL.:\t{0}\tValue: {1}\tCost: {2}".format(optimal_collection.box_stats, optimal_collection.total_value, optimal_collection.total_weight)
 
-    print "\tBEST COLL.:\t{0}\tValue: {1}\tCost: {2}".format(optimal_collection.box_stats, optimal_collection.total_value, optimal_collection.total_weight)
+    # print "\tBEST COLL.:\t{0}\tValue: {1}\tCost: {2}".format(optimal_collection.box_stats, optimal_collection.total_value, optimal_collection.total_weight)
 
+    return optimal_collection
 
 
 ##################################
 ## WoC function goes here
 ##################################
 
+def wisdom_of_crowds(crowd_size):
 
-def wisdom_of_crowds(crowd_size, population_size, mutation_rate, generations):
-    pass
+    capacity = 50
+    num_boxes = 10
+    weight_max = 30
+    max_value = 10
+
+    best_solution = None
+
+    for c in range(crowd_size):
+        solution = genetic_algorithm(capacity, num_boxes, weight_max, max_value)
+        print "CROWD SOLUTION", c, ":", solution.total_value, solution
+        if best_solution == None:
+            best_solution = solution
+        elif (solution.total_value > best_solution.total_value) and (solution.total_weight < weight_max):
+            best_solution = solution
+
+    print "BEST CROWD SOLUTION:\t", best_solution
+
+    return best_solution
 
 
 
+if __name__ == "__main__":
 
-#######################
-# knapsack parameters
-#######################
-
-capacity = 50
-num_boxes = 10
-weight_max = 30
-max_value = 10
-
-best = genetic_algorithm(capacity, num_boxes, weight_max, max_value)
+    crowd_size = 5
+    best_solution = wisdom_of_crowds(crowd_size)
