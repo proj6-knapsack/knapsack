@@ -7,6 +7,10 @@ class Box():
         self.value = value
         self.inside = inside
 
+    def __str__(self):
+        return "ID: {0}\tWeight: {1}\tValue: {2}".format(self.id, self.weight, self.value)
+
+
 class BoxCollection():
 
     def __init__(self, box_stats, total_weight, total_value, boxes):

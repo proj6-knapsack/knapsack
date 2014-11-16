@@ -9,11 +9,12 @@ import random
 import math
 import defs
 import matplotlib.pyplot as plt
-
+import os
+import csv
 
 DEBUG_EVOLUTION = False
 DEBUG_WOC = True
-
+SAVE_BOX_FILE = True # save this box configuration
 
 def random_color():
     """
@@ -373,6 +374,18 @@ def create_boxes(num_boxes, weight_max, value_max):
         value = random.randint(1, value_max)
         box = defs.Box(i, weight, value)
         boxes.append(box)
+
+    # record boxes in text file
+    if SAVE_BOX_FILE:
+        filepath = os.path.split(os.path.realpath(__file__))[0]
+        filename = "boxes.csv"
+        full_filename = os.path.join(filepath, filename)
+        with open(full_filename,'w') as f:
+            a = csv.writer(f, delimiter=',')
+            a.writerow(['ID', 'Value', 'Weight'])
+            for box in boxes:
+                a.writerow([box.id, box.value, box.weight])
+
     return boxes
 
 
@@ -383,9 +396,9 @@ if __name__ == "__main__":
     #
     # genetic algorithm and WoC parameters
     #
-    crowd_size = 20
-    population_size = 30
-    generations = 30
+    crowd_size = 5
+    population_size = 10
+    generations = 10
 
 
     #
