@@ -10,34 +10,26 @@ import math
 import defs
 
 
-DEBUG_EVOLUTION = False
-DEBUG_WOC = False
+DEBUG_EVOLUTION = True
+DEBUG_WOC = True
 
 
-def genetic_algorithm(capacity, num_boxes, weight_max, population_size, generations):
+def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, generations):
     """
     :return: BoxCollection instance with optimal packing (greatest value and lowest weight)
     """
 
-    # create a collection of n objects with weights w and values v to choose from
-    box_collection = list()
+    # boxes are only created once, outside this function,
+    # so that we are solving the same problem each time.
+    # woc requires that there are multiple solutions to the same problem.
+    box_collection = boxes
+    boxes_outside = box_collection[:]
 
     # keep track of the best collection found so far
     optimal_collection = None
 
     contents = list()
 
-    ###############################
-    # weight and value parameters
-    ###############################
-
-    for i in range(num_boxes):
-        weight = random.randint(1, 30)
-        value = random.randint(1, 10)
-        box = defs.Box(i, weight, value)
-        box_collection.append(box)
-
-    boxes_outside = box_collection[:]
 
     ##################
     # GA parameters
@@ -225,12 +217,12 @@ def genetic_algorithm(capacity, num_boxes, weight_max, population_size, generati
 
 
 
-def wisdom_of_crowds(crowd_size, capacity, num_boxes, weight_max, population_size, generations):
+def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations):
 
     best_solution = None
 
     for c in range(crowd_size):
-        solution = genetic_algorithm(capacity, num_boxes, weight_max, population_size, generations)
+        solution = genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, generations)
 
         if DEBUG_WOC:
             print "CROWD SOLUTION", c, ":", solution
@@ -244,14 +236,26 @@ def wisdom_of_crowds(crowd_size, capacity, num_boxes, weight_max, population_siz
 
 
 
-if __name__ == "__main__":
+def create_boxes(num_boxes, weight_max, value_max):
+    # create a collection of n objects with weights w and values v to choose from
+    boxes = list()
+    for i in range(num_boxes):
+        weight = random.randint(1, weight_max)
+        value = random.randint(1, value_max)
+        box = defs.Box(i, weight, value)
+        boxes.append(box)
+    return boxes
 
+
+
+
+if __name__ == "__main__":
 
     #
     # genetic algorithm and WoC parameters
     #
-    crowd_size = 5
-    population_size = 50
+    crowd_size = 3
+    population_size = 5
     generations = 10
 
 
@@ -261,8 +265,11 @@ if __name__ == "__main__":
     capacity = 50
     num_boxes = 10
     weight_max = 30
+    value_max = 30
 
 
-    best_solution = wisdom_of_crowds(crowd_size, capacity, num_boxes, weight_max, population_size, generations)
+    boxes = create_boxes(num_boxes, weight_max, value_max)
+
+    best_solution = wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations)
 
     print "FINAL RESULT:", best_solution
