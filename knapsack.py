@@ -44,10 +44,14 @@ mutation_rate = 0.1
 
 
 population = list()
-curr_size = 0
 round_num = 0
 
 while round_num < rounds:
+
+    print "Evolution Round", round_num
+    round_num += 1
+
+    curr_size = 0  # reset current size each evolution round
     while curr_size <= pop_size:
         curr_weight = 0
         curr_value = 0
@@ -85,12 +89,17 @@ while round_num < rounds:
 
         full_box_stats = defs.BoxCollection(chromosome, total_weight, total_value)
         population.append(full_box_stats)
+
         curr_size += 1
 
         #reset knapsack
         boxes_outside = box_collection[:]
         for box in boxes_outside:
             box.inside = False
+
+        # print debug info about this population member
+        print "\tPop Member {0}:\t{1}\tValue: {2}\tCost: {3}".format(curr_size, full_box_stats.box_stats, full_box_stats.total_value, full_box_stats.total_weight)
+
 
     ##################################
     ## Crossover function goes here
@@ -108,8 +117,9 @@ while round_num < rounds:
             min_value = x.total_value
             worst_box_config = x
 
-    # mutate x elements at random indices
+    print "\tMUTATING:\t{0}\tValue: {1}\tCost: {2}".format(worst_box_config.box_stats, worst_box_config.total_value, worst_box_config.total_weight)
 
+    # mutate x elements at random indices
     num_to_switch = random.randint(0, 9)
     idx_to_switch = list()
 
@@ -126,7 +136,8 @@ while round_num < rounds:
             x.box_stats[y] = 1
         else:
             x.box_stats[y] = 0
-    
+
+    print "\tNEW VALUE:\t{0}\tValue: {1}\tCost: {2}".format(x.box_stats, x.total_value, x.total_weight)
 
 ##################################
 ## WoC function goes here
