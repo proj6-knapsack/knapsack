@@ -25,3 +25,16 @@ class BoxCollection():
 
     def __str__(self):
         return "{0}\tValue: {1}\tCost: {2}".format(self.box_stats, self.total_value, self.total_weight)
+
+
+def find_best_config(population):
+
+    best_config = None
+    max_value = None
+
+    for x in population:
+        if x.total_value > max_value:
+            max_value = x.total_value
+            best_config = x
+
+    return best_config

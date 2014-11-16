@@ -41,6 +41,10 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
     ##################
     pop_size = 50
     rounds = 100
+
+    crossover_rate = 0.75
+    num_to_crossover = math.ceil(pop_size * crossover_rate)
+
     mutation_rate = 0.1
     num_to_mutate = math.ceil(pop_size * mutation_rate)
 
@@ -101,9 +105,60 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
             # print debug info about this population member
             print "\tPop Member {0}:\t{1}\tValue: {2}\tCost: {3}".format(curr_size, full_box_stats.box_stats, full_box_stats.total_value, full_box_stats.total_weight)
 
+        ######################################
+        # crossover function
+        #######################################
 
-        ## the elitism method was chosen over the crossover method:
-        ## the best box configs are maintained in the population
+        num_crossed = 0
+
+        while num_crossed < num_to_crossover:
+            # find top 2 box configs (those with the highest value)
+            best_box_config = defs.find_best_config(population)
+
+            population_minus_best = population[:]
+            population_minus_best.remove(best_box_config)
+
+            next_best_config = defs.find_best_config(population_minus_best)
+
+            # perform crossover:
+            # child's first half is from best config, second half from second best config
+            child = list()
+
+            #divide configs into 2 parts
+            length = int(math.ceil(num_boxes/2))
+
+            for x in best_box_config.box_stats[0:length]:
+                child.append(x)
+            for y in next_best_config.box_stats[length:num_boxes]:
+                child.append(y)
+
+            # find stats on child box config
+            child_value = 0
+            child_weight = 0
+
+            for i in range(len(box_collection)):
+                if child[i] == 1:
+                    child_value += box_collection[i].value
+                    child_weight += box_collection[i].weight
+
+            child_box_config = defs.BoxCollection(child, child_weight, child_value, box_collection)
+
+            # if total weight of child box config > capacity, remove boxes with low values
+            sorted_by_value = sorted(box_collection, key=lambda box: box.value)
+
+            box_idx = 0
+
+            while child_weight > weight_max:
+                least_value_box = sorted_by_value[box_idx]
+                least_value_id = least_value_box.id
+
+                if child_box_config.box_stats[least_value_id] == 1:
+                    child_box_config.box_stats[least_value_id] = 0
+                    child_weight = child_weight - least_value_box.weight
+                else:
+                    box_idx += 1
+
+            num_crossed += 1
 
 
         ######################
