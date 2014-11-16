@@ -49,7 +49,7 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
 
     while round_num < rounds:
 
-        # print "Evolution Round", round_num
+        print "Evolution Round", round_num
         round_num += 1
 
         curr_size = 0  # reset current size each evolution round
