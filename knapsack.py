@@ -355,10 +355,11 @@ def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, populat
     else:
         print "not better solution", new_full_solution
 
-    plot_ga_stats(ga_stats)
 
     elapsed_time = time.time() - woc_start_time
     print "WOC TIME:", elapsed_time
+
+    plot_ga_stats(ga_stats)
 
     return best_solution
 
@@ -394,16 +395,16 @@ if __name__ == "__main__":
     #
     # genetic algorithm and WoC parameters
     #
-    crowd_size = 20
-    population_size = 25
-    generations = 30
+    crowd_size = 30
+    population_size = 50
+    generations = 50
 
 
     #
     # knapsack parameters
     #
-    capacity = 100
-    num_boxes = 12
+    capacity = 1000
+    num_boxes = 400
     weight_max = 50
     value_max = 50
 
