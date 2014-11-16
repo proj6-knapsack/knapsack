@@ -6,16 +6,8 @@
 ############################################################################
 
 import random
+import defs
 
-# not sure that this needs its own def file right now
-class Box():
-
-    def __init__(self, id, weight, value, inside=False):
-        self.id = id
-        self.weight = weight
-        self.value = value
-        self.inside = inside
-        
 # knapsack parameters
 capacity = 50
 num_boxes = 10
@@ -31,32 +23,32 @@ contents = list()
 for i in range(num_boxes):
     weight = random.randint(1, 30)
     value = random.randint(1, 10)
-    box = Box(i, weight, value)
+    box = defs.Box(i, weight, value)
     box_collection.append(box)
 
 boxes_outside = box_collection[:]
-####################################
-## GA Parameters
-####################################
 
+# GA parameters
 pop_size = 50
 rounds = 100
 crossover_rate = 0.9
 mutation_rate = 0.1
 
-## this is just an example of how to generate a population
-## put boxes in the knapsack in a random configuration
+
 population = list()
 curr_size = 0
 
-
+#create population of box configurations with weight <= capacity
 while curr_size <= pop_size:
 
     curr_weight = 0
     curr_value = 0
+    total_weight = 0
+    total_value = 0
 
     while curr_weight <= capacity and len(boxes_outside) > 0:
 
+        full_box_stats = list()
         #add a random box to the knapsack
         random_idx = random.randint(0, len(boxes_outside)-1)
         chosen_box = boxes_outside[random_idx]
@@ -77,10 +69,14 @@ while curr_size <= pop_size:
     for box in box_collection:
         if box.inside is True:
             chromosome.append(1)
+            total_value += box.value
+            total_weight += box.weight
+
         else:
             chromosome.append(0)
 
-    population.append(chromosome)
+    full_box_stats = defs.BoxCollection(chromosome, total_weight, total_value)
+    population.append(full_box_stats)
     curr_size += 1
 
     #reset knapsack
@@ -88,7 +84,6 @@ while curr_size <= pop_size:
     for box in boxes_outside:
         box.inside = False
 
-print population
 
 ##################################
 ## Crossover function goes here
