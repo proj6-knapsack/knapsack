@@ -160,6 +160,8 @@ def genetic_algorithm(capacity, num_boxes, weight_max, max_value):
 
             num_crossed += 1
 
+        # TODO: remove as many random box configs as there are new children
+
 
         ######################
         # mutation function
