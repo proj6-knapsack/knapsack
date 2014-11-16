@@ -11,10 +11,12 @@ import defs
 import matplotlib.pyplot as plt
 import os
 import csv
+import time
 
 DEBUG_EVOLUTION = False
 DEBUG_WOC = True
 SAVE_BOX_FILE = True # save this box configuration
+
 
 def random_color():
     """
@@ -28,15 +30,21 @@ def random_color():
     return color
 
 
-
 def plot_ga_stats(data):
 
     N = len(data[0])
     ind = xrange(N)
     width = 1
 
+    # data may contain empty values if no good solution was found during a generation.
+    # replace those values with 0.
     for crowd_member in data:
-        costs = [x.total_value for x in crowd_member]
+        costs = []
+        for x in crowd_member:
+            if not x:
+                costs.append(0)
+            else:
+                costs.append(x.total_value)
         p1 = plt.plot(ind, costs)
         color = random_color()
         p1[-1].set_color(color)
@@ -49,6 +57,156 @@ def plot_ga_stats(data):
 
     plt.show()
 
+
+def remove_items(solution, weight_max, boxes):
+    # if total weight of child box config > capacity, remove boxes with low values
+    if solution.total_weight > weight_max:
+        boxes_sorted_by_value = sorted(boxes, key=lambda box: box.value, reverse=False)
+        while boxes_sorted_by_value and solution.total_weight > weight_max:
+            least_value_box = boxes_sorted_by_value.pop(0)
+            if solution.box_stats[least_value_box.id] == 1:
+                solution.box_stats[least_value_box.id] = 0
+                solution.update_values()
+    return solution
+
+
+
+def mutate(box_collection, population):
+    """
+    :param box_collection:
+    :return: mutated box_collection
+    """
+    # perform mutation on weakest box configs
+    min_value = 99999999999999
+    worst_box_config = None
+    for x in population:
+        if x.total_value < min_value:
+            min_value = x.total_value
+            worst_box_config = x
+
+    if DEBUG_EVOLUTION:
+        print "\tMUTATING:\t", worst_box_config
+
+    # mutate x elements at random indices
+    num_to_switch = random.randint(0, len(box_collection.box_stats)-1)
+    idx_to_switch = list()
+
+    config_to_mutate = population.index(worst_box_config)
+
+    while len(idx_to_switch) < num_to_switch:
+        idx = random.randint(0, len(box_collection.box_stats)-1)
+        if idx not in idx_to_switch:
+            idx_to_switch.append(idx)
+
+    x = population[config_to_mutate]
+    for y in idx_to_switch:
+        if x.box_stats[y] == 0:
+            x.box_stats[y] = 1
+        else:
+            x.box_stats[y] = 0
+
+    # have to recompute value and cost for mutated element
+    x.update_values()
+
+    # may be overweight, remove lowest value items
+    x = remove_items(x, weight_max, boxes)
+
+    if DEBUG_EVOLUTION:
+        print "\tNEW VALUE:\t{0}".format(x)
+
+
+
+def evolve_generation(population_size, capacity, boxes, num_boxes, weight_max, population=None):
+    """
+    :param population: list of box collections
+    :return: list of evolved box collections
+    """
+
+    # if there is no starting population, build a random population
+    if not population:
+        population = list()
+        for idx in range(population_size):
+            boxes_outside = boxes[:]
+            random.shuffle(boxes_outside)
+            solution = defs.BoxCollection([0 for x in range(num_boxes)], 0, 0, boxes)
+            while len(boxes_outside) > 0:
+                chosen_box = boxes_outside.pop()
+                if chosen_box.weight + solution.total_weight <= weight_max:
+                    solution.box_stats[chosen_box.id] = 1
+                    solution.update_values()
+
+            population.append(solution)
+
+    else:
+        # there is a starting population, so:
+        # 1. remove unfit adults
+        # 2. copy the best adults as whole children
+        # 3. fill out the population by crossing over adults into children
+
+        # 1. remove any population members over the weight limit
+        for s in population:
+            if s.total_weight > weight_max:
+                population.remove(s)
+
+        # 2. build new population of best adults
+        # sort population by value
+        population = sorted(population, key=lambda solution: solution.total_value, reverse=True)
+        parent_threshold = 0.4 # keep the best percentage of parents
+        parent_threshold_count = int(population_size * parent_threshold)
+        new_population = list()
+
+        # 3. breed children until population is full
+        while len(new_population) < population_size - parent_threshold_count:
+            child = create_child(population, boxes, weight_max)
+            new_population.append(child)
+
+        # 4. mutate children if they're unlucky
+        mutation_rate = 0.1
+        num_to_mutate = int(math.ceil(population_size * mutation_rate))
+        for i in range(num_to_mutate):
+            random_item = random.choice(new_population)
+            random_item = mutate(random_item, new_population)
+
+        # add unmutated good parents to pool, to make sure we don't mess up our best solution
+        new_population += population[:parent_threshold_count]
+
+        # assign new generation to population
+        population = new_population
+
+    if DEBUG_EVOLUTION:
+        for idx, solution in enumerate(population):
+            print "\tPop Member {0}:\t{1}".format(idx, solution)
+
+    return population
+
+
+
+def create_child(population, boxes, weight_max):
+
+    ######################################
+    # crossover function
+    #######################################
+
+    parentA = random.choice(population)
+    parentB = random.choice(population)
+
+    # perform crossover:
+    # child's first half is from best config, second half from second best config
+    child = list()
+
+    #divide configs into 2 parts
+    length = int(math.ceil(len(boxes)/2))
+
+    child = parentA.box_stats[0:length] + parentB.box_stats[length:num_boxes]
+
+    # create boxCollection object
+    child_box_config = defs.BoxCollection(child, 0, 0, boxes)
+    child_box_config.update_values()
+
+    # if total weight of child box config > capacity, remove boxes with low values
+    child_box_config = remove_items(child_box_config, weight_max, boxes)
+
+    return child_box_config
 
 
 
@@ -65,202 +223,35 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
     box_collection = boxes
     boxes_outside = box_collection[:]
 
-    # keep track of the best collection found so far
-    optimal_collection = None
-
     # list of boxes contained inside a configuration?
     contents = list()
-
-
-    # list of lists that tracks stats over evolution
-    performance_stats = list()  #  [[best_val, best_weight, avg_value, avg_weight],...]
 
     # remember the best solutions from each generation.
     best_of_each_generation = list()
 
+    start_time = time.time()
 
     ##################
     # GA parameters
     ##################
 
-    crossover_rate = 0.75
-    num_to_crossover = math.ceil(population_size * crossover_rate)
-
-    mutation_rate = 0.1
-    num_to_mutate = math.ceil(population_size * mutation_rate)
-
-    population = list()
-    round_num = 0
-
+    population = None
 
     # evolve a solution through a number of generations
-    while round_num < generations:
+    for round_num in range(generations):
 
         if DEBUG_EVOLUTION:
             print "Evolution Generation #", round_num
-        round_num += 1
 
-        # build random initial population
-        curr_size = 0  # have to reset current size each evolution round
-        while curr_size <= population_size:
-            curr_weight = 0
-            curr_value = 0
-            total_weight = 0
-            total_value = 0
-
-            # create population of random box configurations with weight <= capacity
-            while curr_weight <= capacity and len(boxes_outside) > 0:
-
-                #add a random box to the knapsack
-                random_idx = random.randint(0, len(boxes_outside)-1)
-                chosen_box = boxes_outside[random_idx]
-                curr_weight += chosen_box.weight
-                curr_value += chosen_box.value
-
-                #add it to the contents
-                contents.append(chosen_box)
-                chosen_box.inside = True
-
-                #check if there's any possible boxes to add to the contents without going over capacity
-                # TODO: double check this actually adds the box to the contents
-                for x in boxes_outside[:]:
-                    if x.weight + curr_weight > capacity:
-                        boxes_outside.remove(x)
-
-            # create chromosome for population
-            # calculate this collection's value and weight
-            chromosome = list()
-            for box in box_collection:
-                if box.inside is True:
-                    chromosome.append(1)
-                    total_value += box.value
-                    total_weight += box.weight
-                else:
-                    chromosome.append(0)
-
-            # create BoxCollection from chromosome, add to population
-            full_box_stats = defs.BoxCollection(chromosome, total_weight, total_value, box_collection)
-            population.append(full_box_stats)
-            curr_size += 1
-
-            #reset knapsack
-            boxes_outside = box_collection[:]
-            for box in boxes_outside:
-                box.inside = False
-
-            # print debug info about this population member
-            if DEBUG_EVOLUTION:
-                print "\tPop Member {0}:\t{1}".format(curr_size, full_box_stats)
-
-
-        ######################################
-        # crossover function
-        #######################################
-
-        num_crossed = 0
-
-        while num_crossed < num_to_crossover:
-            # find top 2 box configs (those with the highest value)
-            best_box_config = defs.find_best_config(population)
-
-            population_minus_best = population[:]
-            population_minus_best.remove(best_box_config)
-
-            next_best_config = defs.find_best_config(population_minus_best)
-
-            # perform crossover:
-            # child's first half is from best config, second half from second best config
-            child = list()
-
-            #divide configs into 2 parts
-            length = int(math.ceil(num_boxes/2))
-
-            for x in best_box_config.box_stats[0:length]:
-                child.append(x)
-            for y in next_best_config.box_stats[length:num_boxes]:
-                child.append(y)
-
-            # find stats on child box config
-            child_value = 0
-            child_weight = 0
-
-            for i in range(len(box_collection)):
-                if child[i] == 1:
-                    child_value += box_collection[i].value
-                    child_weight += box_collection[i].weight
-
-            child_box_config = defs.BoxCollection(child, child_weight, child_value, box_collection)
-
-            # if total weight of child box config > capacity, remove boxes with low values
-            sorted_by_value = sorted(box_collection, key=lambda box: box.value)
-
-            box_idx = 0
-
-            while child_weight > weight_max:
-                least_value_box = sorted_by_value[box_idx]
-                least_value_id = least_value_box.id
-
-                if child_box_config.box_stats[least_value_id] == 1:
-                    child_box_config.box_stats[least_value_id] = 0
-                    child_weight = child_weight - least_value_box.weight
-                else:
-                    box_idx += 1
-
-            num_crossed += 1
-
-        # TODO: remove as many random box configs as there are new children
-
-
-        ######################
-        # mutation function
-        ######################
-
-        num_mutated = 0
-
-        while num_mutated < num_to_mutate:
-            # perform mutation on weakest box configs
-            min_value = 99999999999999
-            worst_box_config = None
-            for x in population:
-                if x.total_value < min_value:
-                    min_value = x.total_value
-                    worst_box_config = x
-
-            if DEBUG_EVOLUTION:
-                print "\tMUTATING:\t", worst_box_config
-
-            # mutate x elements at random indices
-            num_to_switch = random.randint(0, 9)
-            idx_to_switch = list()
-
-            config_to_mutate = population.index(worst_box_config)
-
-            while len(idx_to_switch) < num_to_switch:
-                idx = random.randint(0, 9)
-                if idx not in idx_to_switch:
-                    idx_to_switch.append(idx)
-
-            x = population[config_to_mutate]
-            for y in idx_to_switch:
-                if x.box_stats[y] == 0:
-                    x.box_stats[y] = 1
-                else:
-                    x.box_stats[y] = 0
-
-            # have to recompute value and cost for mutated element
-            x.update_values()
-            num_mutated += 1
-
-            if DEBUG_EVOLUTION:
-                print "\tNEW VALUE:\t{1}".format(curr_size, x)
-
+        population = evolve_generation(population_size, capacity, boxes, num_boxes, weight_max, population)
 
         # END OF THIS GENERATION
         # find and record best population member from this generation
+        optimal_collection = population[0]
         for x in population:
-            if optimal_collection == None:
+            if optimal_collection.total_weight > weight_max:
                 optimal_collection = x
-            elif (x.total_value > optimal_collection.total_value) and (x.total_weight < weight_max):
+            elif (x.total_value >= optimal_collection.total_value) and (x.total_weight <= weight_max):
                 optimal_collection = x
         best_of_each_generation.append(optimal_collection)
         if DEBUG_EVOLUTION:
@@ -268,12 +259,12 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
 
 
     # END OF ALL GENERATIONS
-    
     # for idx, s in enumerate(best_of_each_generation):
     #     print "Best Sol. Gen. {0}:\t{1}".format(idx, s)
     # generation_best_values = [x.total_value for x in best_of_each_generation]
-    # plot_ga_stats(generation_best_values)
 
+    elapsed_time = time.time() - start_time
+    print "GA TIME:", elapsed_time
 
     return (optimal_collection, best_of_each_generation)
 
@@ -283,6 +274,7 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
 
 def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations):
 
+    woc_start_time = time.time()
     solutions = []
     best_solution = None
     ga_stats = [] # list of stats for each crowd member's evolution
@@ -296,20 +288,21 @@ def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, populat
 
         if DEBUG_WOC:
             print "CROWD SOLUTION", c, ":", solution
-
-        if best_solution == None:
-            best_solution = solution
-        elif (solution.total_value > best_solution.total_value) and (solution.total_weight < weight_max):
-            best_solution = solution
+        if solution:
+            if best_solution == None:
+                best_solution = solution
+            elif (solution.total_value > best_solution.total_value) and (solution.total_weight < weight_max):
+                best_solution = solution
 
 
     # try to create even better solution by merging crowd's solutions
     # count which boxes are shared by the crowd
     shared_box_counts = [0 for x in range(num_boxes)]
     for idx, solution in enumerate(solutions):
-        for idx in range(num_boxes):
-            if solution.box_stats[idx] == 1:
-                shared_box_counts[idx] += 1
+        if solution:
+            for idx in range(num_boxes):
+                if solution.box_stats[idx] == 1:
+                    shared_box_counts[idx] += 1
     # print "SHARED BOXES:\n", shared_box_counts
 
     # create a new solution from boxes which are shared by the majority of the solutions
@@ -357,10 +350,15 @@ def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, populat
         idx += 1
 
     if new_full_solution.total_value > best_solution.total_value:
-        # print "made better solution"
+        print "made better solution"
         best_solution = new_full_solution
+    else:
+        print "not better solution", new_full_solution
 
     plot_ga_stats(ga_stats)
+
+    elapsed_time = time.time() - woc_start_time
+    print "WOC TIME:", elapsed_time
 
     return best_solution
 
@@ -396,22 +394,21 @@ if __name__ == "__main__":
     #
     # genetic algorithm and WoC parameters
     #
-    crowd_size = 5
-    population_size = 10
-    generations = 10
+    crowd_size = 20
+    population_size = 25
+    generations = 30
 
 
     #
     # knapsack parameters
     #
-    capacity = 50
-    num_boxes = 10
-    weight_max = 30
-    value_max = 30
+    capacity = 100
+    num_boxes = 12
+    weight_max = 50
+    value_max = 50
 
-
-    boxes = create_boxes(num_boxes, weight_max, value_max)
-
-    best_solution = wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations)
-
-    print "\nFINAL RESULT:", best_solution
+    num_tests = 1
+    for i in range(num_tests):
+        boxes = create_boxes(num_boxes, weight_max, value_max)
+        best_solution = wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations)
+        print "\nFINAL RESULT:", best_solution
