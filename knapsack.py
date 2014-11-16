@@ -8,15 +8,54 @@
 import random
 import math
 import defs
+import matplotlib.pyplot as plt
 
 
-DEBUG_EVOLUTION = True
+DEBUG_EVOLUTION = False
 DEBUG_WOC = True
+
+
+def random_color():
+    """
+    Generate a random color.
+    :return: 3-tuple of rgb values normalized 0-1 as matplotlib likes
+    """
+    r = random.randint(1, 100)
+    g = random.randint(1, 100)
+    b = random.randint(1, 100)
+    color = (r*0.01, g*0.01, b*0.01)
+    return color
+
+
+
+def plot_ga_stats(data):
+
+    N = len(data[0])
+    ind = xrange(N)
+    width = 1
+
+    for crowd_member in data:
+        costs = [x.total_value for x in crowd_member]
+        p1 = plt.plot(ind, costs)
+        color = random_color()
+        p1[-1].set_color(color)
+
+    plt.xlabel('Generations')
+    plt.ylabel('Value')
+    plt.grid(True)
+
+    plt.xlim([0,N])
+
+    plt.show()
+
+
 
 
 def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, generations):
     """
-    :return: BoxCollection instance with optimal packing (greatest value and lowest weight)
+    :return: tuple
+    0: BoxCollection instance with optimal packing (greatest value and lowest weight)
+    1: list of values for the best solution from each generation - used in stats
     """
 
     # boxes are only created once, outside this function,
@@ -231,8 +270,11 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
     
     # for idx, s in enumerate(best_of_each_generation):
     #     print "Best Sol. Gen. {0}:\t{1}".format(idx, s)
+    # generation_best_values = [x.total_value for x in best_of_each_generation]
+    # plot_ga_stats(generation_best_values)
 
-    return optimal_collection
+
+    return (optimal_collection, best_of_each_generation)
 
 
 
@@ -242,11 +284,14 @@ def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, populat
 
     solutions = []
     best_solution = None
+    ga_stats = [] # list of stats for each crowd member's evolution
 
     for c in range(crowd_size):
         print "\nCROWD #", c
-        solution = genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, generations)
+        solution_tuple = genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, generations)
+        solution = solution_tuple[0]
         solutions.append(solution)
+        ga_stats.append(solution_tuple[1])
 
         if DEBUG_WOC:
             print "CROWD SOLUTION", c, ":", solution
@@ -314,6 +359,8 @@ def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, populat
         # print "made better solution"
         best_solution = new_full_solution
 
+    plot_ga_stats(ga_stats)
+
     return best_solution
 
 
@@ -336,9 +383,9 @@ if __name__ == "__main__":
     #
     # genetic algorithm and WoC parameters
     #
-    crowd_size = 5
-    population_size = 10
-    generations = 10
+    crowd_size = 20
+    population_size = 30
+    generations = 30
 
 
     #
