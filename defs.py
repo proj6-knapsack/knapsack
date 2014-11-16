@@ -13,3 +13,7 @@ class BoxCollection():
         self.box_stats = box_stats
         self.total_weight = total_weight
         self.total_value = total_value
+
+#currently crossover algorithm just swaps the first half of the fittest configuration w/that of the second fittest
+def crossover(population):
+    print "crossover"

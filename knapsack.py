@@ -71,7 +71,6 @@ while curr_size <= pop_size:
             chromosome.append(1)
             total_value += box.value
             total_weight += box.weight
-
         else:
             chromosome.append(0)
 
@@ -84,16 +83,30 @@ while curr_size <= pop_size:
     for box in boxes_outside:
         box.inside = False
 
-
 ##################################
 ## Crossover function goes here
 ###################################
 
 
-###################################
-## Mutation function goes here
-###################################
+########################################
+## Mutate x elementss at random indices
+########################################
 
+num_to_switch = random.randint(0, 9)
+idx_to_switch = list()
+
+while len(idx_to_switch) < num_to_switch:
+    idx = random.randint(0, 9)
+    if idx not in idx_to_switch:
+        idx_to_switch.append(idx)
+
+x = population[0]
+for y in idx_to_switch:
+    if x.box_stats[y] == 0:
+        x.box_stats[y] = 1
+    else:
+        x.box_stats[y] = 0
+print x.box_stats
 ##################################
 ## WoC function goes here
 ##################################
