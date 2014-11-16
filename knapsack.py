@@ -87,7 +87,7 @@ while round_num < rounds:
             else:
                 chromosome.append(0)
 
-        full_box_stats = defs.BoxCollection(chromosome, total_weight, total_value)
+        full_box_stats = defs.BoxCollection(chromosome, total_weight, total_value, box_collection)
         population.append(full_box_stats)
 
         curr_size += 1
@@ -136,6 +136,9 @@ while round_num < rounds:
             x.box_stats[y] = 1
         else:
             x.box_stats[y] = 0
+
+    # have to recompute value and cost for mutated element
+    x.update_values()
 
     print "\tNEW VALUE:\t{0}\tValue: {1}\tCost: {2}".format(x.box_stats, x.total_value, x.total_weight)
 
