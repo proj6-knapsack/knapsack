@@ -333,12 +333,14 @@ def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, populat
     # print "CORRECTED FULL:", new_full_solution
 
     # try to find any other boxes we can add while remaining within the weight limit
-    # TODO: sort them by value so we will use the higher-value items first
+    # sort them by value so we will use the higher-value items first
     found = False
     idx = 0
+    boxes_sorted_by_value = sorted(boxes, key=lambda box: box.value, reverse=True)
     while not found and idx < num_boxes:
         if new_full_solution.box_stats[idx] == 0:
-            new_weight = new_full_solution.total_weight + boxes[idx].weight
+            highest_value_box = boxes_sorted_by_value.pop(0)
+            new_weight = new_full_solution.total_weight + highest_value_box.weight
             if new_weight <= weight_max:
                 new_full_solution.box_stats[idx] = 1
                 new_full_solution.update_values()
