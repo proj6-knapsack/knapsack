@@ -1,4 +1,6 @@
 
+# data for each individual box:
+# id, weight, value, and bool value for whether it's inside or outside the knapsack
 class Box():
 
     def __init__(self, id, weight, value, inside=False):
@@ -11,6 +13,8 @@ class Box():
         return "ID: {0}\tWeight: {1}\tValue: {2}".format(self.id, self.weight, self.value)
 
 
+# data for each box configuration:
+# bool values for each box within the knapsack, total weight, total value, and data about each box within
 class BoxCollection():
 
     def __init__(self, box_stats, total_weight, total_value, boxes):
@@ -19,6 +23,7 @@ class BoxCollection():
         self.total_value = total_value
         self.boxes = boxes
 
+    # update configuration stats upon mutation/crossover
     def update_values(self):
         self.total_value = 0
         self.total_weight = 0
@@ -31,6 +36,7 @@ class BoxCollection():
         return "{0}\tValue: {1}\tCost: {2}".format(self.box_stats, self.total_value, self.total_weight)
 
 
+# find configuration with maximized value
 def find_best_config(population):
 
     best_config = None

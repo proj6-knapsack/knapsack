@@ -60,8 +60,9 @@ def plot_ga_stats(data):
     plt.show()
 
 
+#remove boxes if the configuration has a total weight > capcacity
 def remove_items(solution, weight_max, boxes):
-    # if total weight of child box config > capacity, remove boxes with low values
+    # remove boxes with low values
     if solution.total_weight > weight_max:
         boxes_sorted_by_value = sorted(boxes, key=lambda box: box.value, reverse=False)
         while boxes_sorted_by_value and solution.total_weight > weight_max:
@@ -266,7 +267,7 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
     return (optimal_collection, best_of_each_generation)
 
 
-
+#crowd-source the best solutions based on the results from a genetic algorithm
 def wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations):
 
     woc_start_time = time.time()
@@ -383,8 +384,6 @@ def create_boxes(num_boxes, weight_max, value_max):
     return boxes
 
 
-
-
 if __name__ == "__main__":
 
     #
@@ -394,7 +393,7 @@ if __name__ == "__main__":
     population_size = 50
     generations = 50
     mutation_rate = 0.1
-    parent_threshold = 0.4 # keep the best percentage of parents
+    parent_threshold = 0.4     # keep the best percentage of parents
 
     #
     # knapsack parameters
@@ -406,6 +405,8 @@ if __name__ == "__main__":
 
     num_tests = 1
     for i in range(num_tests):
+        #create boxes with randomized weights and values
         boxes = create_boxes(num_boxes, weight_max, value_max)
+        #crowd-source the best solutions based on the results from a genetic algorithm
         best_solution = wisdom_of_crowds(boxes, crowd_size, capacity, num_boxes, weight_max, population_size, generations)
         print "\nFINAL RESULT:", best_solution
