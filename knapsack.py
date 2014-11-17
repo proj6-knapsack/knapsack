@@ -8,6 +8,8 @@
 import random
 import math
 import defs
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import os
 import csv
@@ -142,6 +144,7 @@ def evolve_generation(population_size, capacity, boxes, num_boxes, weight_max, p
         # 1. remove unfit adults
         # 2. copy the best adults as whole children
         # 3. fill out the population by crossing over adults into children
+        # 4. mutate particularly unfit children
 
         # 1. remove any population members over the weight limit
         for s in population:
@@ -151,7 +154,6 @@ def evolve_generation(population_size, capacity, boxes, num_boxes, weight_max, p
         # 2. build new population of best adults
         # sort population by value
         population = sorted(population, key=lambda solution: solution.total_value, reverse=True)
-        parent_threshold = 0.4 # keep the best percentage of parents
         parent_threshold_count = int(population_size * parent_threshold)
         new_population = list()
 
@@ -161,7 +163,7 @@ def evolve_generation(population_size, capacity, boxes, num_boxes, weight_max, p
             new_population.append(child)
 
         # 4. mutate children if they're unlucky
-        mutation_rate = 0.1
+
         num_to_mutate = int(math.ceil(population_size * mutation_rate))
         for i in range(num_to_mutate):
             random_item = random.choice(new_population)
@@ -192,9 +194,7 @@ def create_child(population, boxes, weight_max):
 
     # perform crossover:
     # child's first half is from best config, second half from second best config
-    child = list()
 
-    #divide configs into 2 parts
     length = int(math.ceil(len(boxes)/2))
 
     child = parentA.box_stats[0:length] + parentB.box_stats[length:num_boxes]
@@ -222,9 +222,6 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
     # woc requires that there are multiple solutions to the same problem.
     box_collection = boxes
     boxes_outside = box_collection[:]
-
-    # list of boxes contained inside a configuration?
-    contents = list()
 
     # remember the best solutions from each generation.
     best_of_each_generation = list()
@@ -267,8 +264,6 @@ def genetic_algorithm(boxes, capacity, num_boxes, weight_max, population_size, g
     print "GA TIME:", elapsed_time
 
     return (optimal_collection, best_of_each_generation)
-
-
 
 
 
@@ -398,7 +393,8 @@ if __name__ == "__main__":
     crowd_size = 30
     population_size = 50
     generations = 50
-
+    mutation_rate = 0.1
+    parent_threshold = 0.4 # keep the best percentage of parents
 
     #
     # knapsack parameters
