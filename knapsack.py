@@ -30,7 +30,7 @@ SAVE_FILE = False # save this item configuration
 # WISDOM OF CROWDS
 ###################
 
-def wisdom_of_crowds(items, crowd_size, capacity, num_items, weight_max, population_size, generations):
+def wisdom_of_crowds(items, crowd_size, capacity, num_items, population_size, generations):
 
     woc_start_time = time.time()
     solutions = []
@@ -39,7 +39,7 @@ def wisdom_of_crowds(items, crowd_size, capacity, num_items, weight_max, populat
 
     for c in range(crowd_size):
         print "\nCROWD #", c
-        solution_tuple = genetic_algorithm(items, capacity, num_items, weight_max, population_size, generations)
+        solution_tuple = genetic_algorithm(items, capacity, num_items, population_size, generations)
         solution = solution_tuple[0]
         solutions.append(solution)
         ga_stats.append(solution_tuple[1])
@@ -49,7 +49,7 @@ def wisdom_of_crowds(items, crowd_size, capacity, num_items, weight_max, populat
         if solution:
             if best_solution == None:
                 best_solution = solution
-            elif (solution.total_value > best_solution.total_value) and (solution.total_weight < weight_max):
+            elif (solution.total_value > best_solution.total_value) and (solution.total_weight < capacity):
                 best_solution = solution
 
     # try to create even better solution by merging crowd's solutions
@@ -72,7 +72,7 @@ def wisdom_of_crowds(items, crowd_size, capacity, num_items, weight_max, populat
     new_full_solution = ItemCollection(new_solution, items)
 
     # if the item is over weight, remove objects until within weight
-    while new_full_solution.total_weight > weight_max:
+    while new_full_solution.total_weight > capacity:
         # find item in solution with lowest value
         object_to_remove = None
         for idx in range(num_items):
@@ -97,7 +97,7 @@ def wisdom_of_crowds(items, crowd_size, capacity, num_items, weight_max, populat
         if new_full_solution.item_stats[idx] == 0:
             highest_value_item = items_sorted_by_value.pop(0)
             new_weight = new_full_solution.total_weight + highest_value_item.weight
-            if new_weight <= weight_max:
+            if new_weight <= capacity:
                 new_full_solution.item_stats[idx] = 1
                 new_full_solution.update_values()
                 found = True
@@ -122,7 +122,7 @@ def wisdom_of_crowds(items, crowd_size, capacity, num_items, weight_max, populat
 # GENETIC ALGORITHM
 ###################
 
-def genetic_algorithm(items, capacity, num_items, weight_max, population_size, generations):
+def genetic_algorithm(items, capacity, num_items, population_size, generations):
     """
     :return: tuple
     0: itemCollection instance with optimal packing (greatest value and lowest weight)
@@ -140,14 +140,14 @@ def genetic_algorithm(items, capacity, num_items, weight_max, population_size, g
         if DEBUG_EVOLUTION:
             print "Evolution Generation #", round_num
 
-        population = evolve_generation(population_size, capacity, items, num_items, weight_max, population)
+        population = evolve_generation(population_size, capacity, items, num_items, population)
 
         # find and record best population member from this generation
         optimal_collection = population[0]
         for x in population:
-            if optimal_collection.total_weight > weight_max:
+            if optimal_collection.total_weight > capacity:
                 optimal_collection = x
-            elif (x.total_value >= optimal_collection.total_value) and (x.total_weight <= weight_max):
+            elif (x.total_value >= optimal_collection.total_value) and (x.total_weight <= capacity):
                 optimal_collection = x
         best_of_each_generation.append(optimal_collection)
         if DEBUG_EVOLUTION:
@@ -159,7 +159,7 @@ def genetic_algorithm(items, capacity, num_items, weight_max, population_size, g
     return (optimal_collection, best_of_each_generation)
 
 
-def evolve_generation(population_size, capacity, items, num_items, weight_max, population=None):
+def evolve_generation(population_size, capacity, items, num_items, population=None):
     """
     :param population: list of item collections
     :return: list of evolved item collections
@@ -174,7 +174,7 @@ def evolve_generation(population_size, capacity, items, num_items, weight_max, p
             solution = ItemCollection([0 for x in range(num_items)], items)
             while len(items_outside) > 0:
                 chosen_item = items_outside.pop()
-                if chosen_item.weight + solution.total_weight <= weight_max:
+                if chosen_item.weight + solution.total_weight <= capacity:
                     solution.item_stats[chosen_item.id] = 1
                     solution.update_values()
             population.append(solution)
@@ -188,7 +188,7 @@ def evolve_generation(population_size, capacity, items, num_items, weight_max, p
 
         # 1. remove any population members over the weight limit
         for s in population:
-            if s.total_weight > weight_max:
+            if s.total_weight > capacity:
                 population.remove(s)
 
         # 2. save best adults for un-mutated reproduction later
@@ -199,7 +199,7 @@ def evolve_generation(population_size, capacity, items, num_items, weight_max, p
         # 3. breed children until population is full
         new_population = list()
         while len(new_population) < population_size - parent_threshold_count:
-            child = create_child(population, weight_max)
+            child = create_child(population, capacity)
             new_population.append(child)
 
         # 4. mutate children if they're unlucky
@@ -221,11 +221,11 @@ def evolve_generation(population_size, capacity, items, num_items, weight_max, p
     return population
 
 
-def create_child(population, weight_max):
+def create_child(population, capacity):
     """
     Choose 2 random parents and cross-over their chromosomes
     :param population: list of ItemCollections (solutions)
-    :param weight_max: max allowable weight for child
+    :param capacity: max allowable weight for child
     :return: ItemCollection child
     """
     parentA = random.choice(population)
@@ -243,7 +243,7 @@ def create_child(population, weight_max):
     child_item_config = ItemCollection(child, items)
 
     # if total weight of child item config > capacity, remove items with low values
-    child_item_config.limit_weight(weight_max)
+    child_item_config.limit_weight(capacity)
 
     return child_item_config
 
@@ -286,7 +286,7 @@ def mutate(item_collection, population):
     x.update_values()
 
     # may be overweight, remove lowest value items
-    x.limit_weight(weight_max)
+    x.limit_weight(capacity)
 
     if DEBUG_EVOLUTION:
         print "\tNEW VALUE:\t{0}".format(x)
@@ -379,5 +379,5 @@ if __name__ == "__main__":
         #create items with randomized weights and values
         items = create_items(num_items, weight_max, value_max, price_max)
         #crowd-source the best solutions based on the results from a genetic algorithm
-        best_solution = wisdom_of_crowds(items, crowd_size, capacity, num_items, weight_max, population_size, generations)
+        best_solution = wisdom_of_crowds(items, crowd_size, capacity, num_items, population_size, generations)
         print "\nFINAL RESULT:", best_solution
