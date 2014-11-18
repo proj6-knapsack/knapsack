@@ -187,8 +187,7 @@ def evolve_generation(population_size, capacity, items, num_items, population=No
         # 4. mutate children if they're unlucky
         num_to_mutate = int(math.ceil(population_size * mutation_rate))
         for i in range(num_to_mutate):
-            random_item = random.choice(new_population)
-            random_item = mutate(random_item, new_population)
+            mutate( random.choice(new_population) )
 
         # add un-mutated good parents to pool, to make sure we don't mess up our best solution
         new_population += best_parents
@@ -230,48 +229,33 @@ def create_child(population, capacity):
     return child_item_config
 
 
-def mutate(item_collection, population):
+def mutate(item_collection):
     """
+    Perform mutation on item_collection object within population
     :param item_collection:
-    :return: mutated item_collection
+    :return: None
     """
-    # perform mutation on weakest item configs
-    min_fitness = 99999999999999
-    worst_item_config = None
-    for x in population:
-        if x.total_fitness < min_fitness:
-            min_fitness = x.total_fitness
-            worst_item_config = x
 
-    if DEBUG_EVOLUTION:
-        print "\tMUTATING:\t", worst_item_config
-
-    # mutate x elements at random indices
+    # mutate random number of indices
     num_to_switch = random.randint(0, len(item_collection.item_stats)-1)
-    idx_to_switch = list()
+    idx_to_switch = [random.randint(0, len(item_collection.item_stats)-1) for x in range(num_to_switch)]
 
-    config_to_mutate = population.index(worst_item_config)
-
-    while len(idx_to_switch) < num_to_switch:
-        idx = random.randint(0, len(item_collection.item_stats)-1)
-        if idx not in idx_to_switch:
-            idx_to_switch.append(idx)
-
-    x = population[config_to_mutate]
     for y in idx_to_switch:
-        if x.item_stats[y] == 0:
-            x.item_stats[y] = 1
+        if item_collection.item_stats[y] == 0:
+            item_collection.item_stats[y] = 1
         else:
-            x.item_stats[y] = 0
+            item_collection.item_stats[y] = 0
 
     # have to recompute value and cost for mutated element
-    x.update_values()
+    item_collection.update_values()
 
     # may be overweight, remove lowest value items
-    x.limit_weight(capacity)
+    item_collection.limit_weight(capacity)
 
     if DEBUG_EVOLUTION:
-        print "\tNEW VALUE:\t{0}".format(x)
+        print "\tNEW VALUE:\t{0}".format(item_collection)
+
+    return item_collection
 
 
 def plot_ga_stats(data):
