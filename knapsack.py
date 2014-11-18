@@ -20,9 +20,9 @@ from item import Item
 from itemcollection import ItemCollection
 
 
-DEBUG_EVOLUTION = False
+DEBUG_EVOLUTION = True
 DEBUG_WOC = True
-SAVE_FILE = False # save this item configuration
+SAVE_FILE = True # save this item configuration
 
 
 
@@ -72,27 +72,13 @@ def wisdom_of_crowds(items, crowd_size, capacity, num_items, population_size, ge
     new_full_solution = ItemCollection(new_solution, items)
 
     # if the item is over weight, remove objects until within weight
-    while new_full_solution.total_weight > capacity:
-        # find item in solution with lowest value
-        object_to_remove = None
-        for idx in range(num_items):
-            # if this item is included in the solution
-            if new_full_solution.item_stats[idx] == 1:
-                # and it's less valuable that the item we're planning to remove
-                if object_to_remove == None or (items[idx].value < items[object_to_remove]):
-                    # select this item instead
-                    object_to_remove = idx
-
-        # remove the selected item
-        new_full_solution.item_stats[object_to_remove] = 0
-        # recalculate total weight and value of the solution
-        new_full_solution.update_values()
+    new_full_solution.limit_weight(weight_max)
 
     # try to find any other items we can add while remaining within the weight limit
     # sort them by value so we will use the higher-value items first
     found = False
     idx = 0
-    items_sorted_by_value = sorted(items, key=lambda item: item.value, reverse=True)
+    items_sorted_by_value = sorted(items, key=lambda item: item.fitness, reverse=True)
     while not found and idx < num_items:
         if new_full_solution.item_stats[idx] == 0:
             highest_value_item = items_sorted_by_value.pop(0)
@@ -103,7 +89,7 @@ def wisdom_of_crowds(items, crowd_size, capacity, num_items, population_size, ge
                 found = True
         idx += 1
 
-    if new_full_solution.total_value > best_solution.total_value:
+    if new_full_solution.total_fitness > best_solution.total_fitness:
         print "made better solution"
         best_solution = new_full_solution
     else:
@@ -147,7 +133,7 @@ def genetic_algorithm(items, capacity, num_items, population_size, generations):
         for x in population:
             if optimal_collection.total_weight > capacity:
                 optimal_collection = x
-            elif (x.total_value >= optimal_collection.total_value) and (x.total_weight <= capacity):
+            elif (x.total_fitness >= optimal_collection.total_fitness) and (x.total_weight <= capacity):
                 optimal_collection = x
         best_of_each_generation.append(optimal_collection)
         if DEBUG_EVOLUTION:
@@ -161,6 +147,7 @@ def genetic_algorithm(items, capacity, num_items, population_size, generations):
 
 def evolve_generation(population_size, capacity, items, num_items, population=None):
     """
+    Optimizing for high value, low price, within capacity.
     :param population: list of item collections
     :return: list of evolved item collections
     """
@@ -169,36 +156,31 @@ def evolve_generation(population_size, capacity, items, num_items, population=No
     if not population:
         population = list()
         for idx in range(population_size):
-            items_outside = items[:]
-            random.shuffle(items_outside)
-            solution = ItemCollection([0 for x in range(num_items)], items)
-            while len(items_outside) > 0:
-                chosen_item = items_outside.pop()
-                if chosen_item.weight + solution.total_weight <= capacity:
+            items_stack = items[:]
+            random.shuffle(items_stack)
+            solution = ItemCollection([0 for x in range(num_items)], items) # empty solution
+            while len(items_stack) > 0:
+                chosen_item = items_stack.pop()
+                if (chosen_item.weight + solution.total_weight) <= capacity:
                     solution.item_stats[chosen_item.id] = 1
                     solution.update_values()
             population.append(solution)
 
     else:
-        # there is a starting population, so:
-        # 1. remove unfit adults
-        # 2. copy the best adults as whole children
-        # 3. fill out the population by crossing over adults into children
-        # 4. mutate particularly unfit children
-
+        # there is a starting population so...
         # 1. remove any population members over the weight limit
         for s in population:
             if s.total_weight > capacity:
                 population.remove(s)
 
         # 2. save best adults for un-mutated reproduction later
-        population = sorted(population, key=lambda solution: solution.total_value, reverse=True)
+        population = sorted(population, key=lambda solution: solution.total_fitness, reverse=True)
         parent_threshold_count = int(population_size * parent_threshold)
         best_parents = population[:parent_threshold_count]
 
         # 3. breed children until population is full
         new_population = list()
-        while len(new_population) < population_size - parent_threshold_count:
+        while len(new_population) < population_size - parent_threshold_count: # save room to add best parents later
             child = create_child(population, capacity)
             new_population.append(child)
 
@@ -254,11 +236,11 @@ def mutate(item_collection, population):
     :return: mutated item_collection
     """
     # perform mutation on weakest item configs
-    min_value = 99999999999999
+    min_fitness = 99999999999999
     worst_item_config = None
     for x in population:
-        if x.total_value < min_value:
-            min_value = x.total_value
+        if x.total_fitness < min_fitness:
+            min_fitness = x.total_fitness
             worst_item_config = x
 
     if DEBUG_EVOLUTION:
@@ -309,12 +291,12 @@ def plot_ga_stats(data):
             if not x:
                 costs.append(0)
             else:
-                costs.append(x.total_value)
+                costs.append(x.total_fitness)
         p1 = plt.plot(ind, costs)
         color = random_color()
         p1[-1].set_color(color)
     plt.xlabel('Generations')
-    plt.ylabel('Value')
+    plt.ylabel('Value + (1-Price) + (1-Weight)')
     plt.grid(True)
     plt.xlim([0,N])
     plt.show()
@@ -334,7 +316,7 @@ def create_items(num_items, weight_max, value_max, price_max):
         weight = random.randint(1, weight_max)
         value = random.randint(1, value_max)
         price = random.randint(1, price_max)
-        item = Item(i, weight, value, price)
+        item = Item(i, weight, value, price, weight_max, value_max, price_max)
         items.append(item)
     if SAVE_FILE:
         save_items(items)
@@ -356,15 +338,14 @@ def save_items(items):
             a.writerow([item.id, item.value, item.price, item.weight])
 
 
-
 if __name__ == "__main__":
 
     # genetic algorithm and WoC parameters
-    crowd_size = 10
-    population_size = 20
-    generations = 20
-    mutation_rate = 0.1
-    parent_threshold = 0.4  # the best percentage of parents to keep
+    crowd_size = 20
+    population_size = 50
+    generations = 30
+    mutation_rate = 0.2
+    parent_threshold = 0.2  # the best percentage of parents to keep
 
     # knapsack parameters
     capacity = 200
