@@ -20,9 +20,9 @@ from item import Item
 from itemcollection import ItemCollection
 
 
-DEBUG_EVOLUTION = True
+DEBUG_EVOLUTION = False
 DEBUG_WOC = True
-SAVE_FILE = True # save this item configuration
+SAVE_FILE = False # save this item configuration
 
 
 
@@ -280,7 +280,7 @@ def plot_ga_stats(data):
         color = random_color()
         p1[-1].set_color(color)
     plt.xlabel('Generations')
-    plt.ylabel('Value + (1-Price) + (1-Weight)')
+    plt.ylabel('Fitness')
     plt.grid(True)
     plt.xlim([0,N])
     plt.show()
@@ -325,15 +325,15 @@ def save_items(items):
 if __name__ == "__main__":
 
     # genetic algorithm and WoC parameters
-    crowd_size = 20
-    population_size = 50
-    generations = 30
-    mutation_rate = 0.2
+    crowd_size = 25
+    population_size = 60
+    generations = 70
+    mutation_rate = 0.1
     parent_threshold = 0.2  # the best percentage of parents to keep
 
     # knapsack parameters
     capacity = 200
-    num_items = 20
+    num_items = 10
     weight_max = 50
     value_max = 50
     price_max = 100
